@@ -1,6 +1,6 @@
 {
 	"name": "@running-grass/tomato-publisher",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "番茄小说作者后台 API 客户端库（多级 Service：Client → Book → Volume → Chapter）",
 	"type": "module",
 	"main": "./dist/index.js",
