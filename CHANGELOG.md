@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/running-grass/tomato-publisher/compare/v0.1.2...v0.2.0) (2026-05-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* 修改为使用puppeteer进行浏览器自动化
+
+### Features
+
+* 修改为使用puppeteer进行浏览器自动化 ([18e71a7](https://github.com/running-grass/tomato-publisher/commit/18e71a7b1aa3178e0df0d602e6e69d9bd3b642c4))
+
 ## [0.1.2](https://github.com/running-grass/tomato-publisher/compare/v0.1.1...v0.1.2) (2026-05-07)
 
 

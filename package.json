@@ -1,6 +1,6 @@
 {
 	"name": "@running-grass/tomato-publisher",
-	"version": "0.1.2",
+	"version": "0.2.0",
 	"description": "番茄小说作家后台库（Puppeteer：导航 GET + UI POST；Client → Book → Volume → Chapter）",
 	"type": "module",
 	"main": "./dist/index.js",
