@@ -1,19 +1,6 @@
-import type {
-	BookInfo,
-	VolumeInfo,
-	VolumeListResponse,
-	VolumeModifyData,
-} from "../types";
+import type { BookInfo, VolumeInfo, VolumeModifyData } from "../types";
 import type { FanqieClient } from "./fanqie-client";
 import { VolumeService } from "./volume-service";
-
-const URL_VOLUME_LIST =
-	"https://fanqienovel.com/api/author/volume/volume_list/v1";
-const URL_ADD_VOLUME =
-	"https://fanqienovel.com/api/author/volume/add_volume/v0";
-const URL_MODIFY_VOLUME = "https://fanqienovel.com/api/author/volume/modify/v0";
-const URL_DELETE_VOLUME =
-	"https://fanqienovel.com/api/author/volume/delete_volume/v0";
 
 /**
  * 作品级 Service：持有作品 ID 与作品元信息，管理卷集合。
@@ -43,44 +30,25 @@ export class BookService {
 	}
 
 	private async fetchVolumeList(): Promise<VolumeInfo[]> {
-		const data = await this.client.http.get<VolumeListResponse>(
-			URL_VOLUME_LIST,
-			{ book_id: this.bookId },
-			"获取卷列表失败",
-		);
+		const data = await this.client.browser.readVolumeList(this.bookId);
 		return data.volume_list ?? [];
 	}
 
 	/** 新增卷；写后失效卷列表缓存。 */
 	async addVolume(volumeName: string): Promise<void> {
-		await this.client.http.postForm<null>(
-			URL_ADD_VOLUME,
-			{ book_id: this.bookId, volume_name: volumeName },
-			"新增卷失败",
-		);
+		await this.client.browser.addVolume(this.bookId, volumeName);
 		this._volumeListPromise = undefined;
 	}
 
 	/** 修改卷信息（如卷名/顺序）；写后失效卷列表缓存。 */
 	async modifyVolumes(volumeData: VolumeModifyData[]): Promise<void> {
-		await this.client.http.postForm<null>(
-			URL_MODIFY_VOLUME,
-			{
-				book_id: this.bookId,
-				volume_data: JSON.stringify(volumeData),
-			},
-			"修改卷失败",
-		);
+		await this.client.browser.modifyVolumes(this.bookId, volumeData);
 		this._volumeListPromise = undefined;
 	}
 
 	/** 删除卷；写后失效卷列表缓存。 */
 	async deleteVolume(volumeId: string): Promise<void> {
-		await this.client.http.postForm<null>(
-			URL_DELETE_VOLUME,
-			{ book_id: this.bookId, volumeId },
-			"删除卷失败",
-		);
+		await this.client.browser.deleteVolume(this.bookId, volumeId);
 		this._volumeListPromise = undefined;
 	}
 

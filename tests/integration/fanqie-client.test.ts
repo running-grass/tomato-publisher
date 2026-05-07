@@ -1,12 +1,19 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FanqieClient } from "../../src/index.js";
-import { cookie, skipIfNoCookie } from "./fixtures.js";
+import { chromiumPath, skipIfNoUserDataDir, userDataDir } from "./fixtures.js";
 
-describe.skipIf(skipIfNoCookie)("FanqieClient (integration)", () => {
+describe.skipIf(skipIfNoUserDataDir)("FanqieClient (integration)", () => {
 	let client: FanqieClient;
 
 	beforeAll(() => {
-		client = new FanqieClient({ cookie });
+		client = new FanqieClient({
+			userDataDir,
+			...(chromiumPath ? { executablePath: chromiumPath } : {}),
+		});
+	});
+
+	afterAll(async () => {
+		await client.close();
 	});
 
 	it("getAuthorInfo 返回非空作者信息", async () => {

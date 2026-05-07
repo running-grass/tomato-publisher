@@ -1,7 +1,7 @@
 {
 	"name": "@running-grass/tomato-publisher",
 	"version": "0.1.2",
-	"description": "番茄小说作者后台 API 客户端库（多级 Service：Client → Book → Volume → Chapter）",
+	"description": "番茄小说作家后台库（Puppeteer：导航 GET + UI POST；Client → Book → Volume → Chapter）",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -27,7 +27,8 @@
 		"prepare": "husky",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"lint:ci": "biome ci ."
+		"lint:ci": "biome ci .",
+		"verify-login": "tsx src/cli/verify-login.ts"
 	},
 	"lint-staged": {
 		"*.{js,ts,mjs,cjs,json,jsonc}": [
@@ -50,15 +51,21 @@
 		"node": ">=20"
 	},
 	"dependencies": {
-		"axios": "^1.13.6"
+		"jsqr": "^1.4.0",
+		"pngjs": "^7.0.0",
+		"puppeteer-core": "^24.8.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.8",
 		"@commitlint/cli": "^20.5.0",
 		"@commitlint/config-conventional": "^20.5.0",
 		"@types/node": "^22.10.0",
+		"@types/pngjs": "^6.0.5",
+		"@types/qrcode": "^1.5.6",
 		"husky": "^9.1.7",
+		"qrcode": "^1.5.4",
 		"lint-staged": "^16.4.0",
+		"tsx": "^4.19.0",
 		"typescript": "^5",
 		"vitest": "^3.0.0"
 	}

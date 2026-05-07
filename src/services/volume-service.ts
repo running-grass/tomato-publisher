@@ -2,16 +2,7 @@ import type { ChapterListResponse, VolumeInfo } from "../types";
 import type { BookService } from "./book-service";
 import { ChapterService } from "./chapter-service";
 
-const URL_CHAPTER_LIST =
-	"https://fanqienovel.com/api/author/chapter/chapter_list/v1";
-const URL_NEW_ARTICLE =
-	"https://fanqienovel.com/api/author/article/new_article/v0/";
-
 const ALL_CHAPTERS_PAGE_SIZE = 100;
-
-interface NewArticleResponse {
-	itemId: string;
-}
 
 /**
  * 卷级 Service：持有卷 ID 与卷元信息，管理章节集合。
@@ -46,21 +37,14 @@ export class VolumeService {
 		pageIndex: number,
 		pageSize: number,
 	): Promise<ChapterListResponse> {
-		return this.book.client.http.get<ChapterListResponse>(
-			URL_CHAPTER_LIST,
-			{
-				book_id: this.book.bookId,
-				page_index: pageIndex,
-				page_count: pageSize,
-				volumeId: this.volumeId,
-			},
-			"获取章节列表失败",
-		);
+		return this.book.client.browser.readChapterList({
+			bookId: this.book.bookId,
+			volumeId: this.volumeId,
+			pageIndex,
+			pageCount: pageSize,
+		});
 	}
 
-	/**
-	 * 拉取并缓存当前卷的全部章节 itemId 集合，供 `chapter(id)` 校验。
-	 */
 	private async getChapterIdSet(): Promise<Set<string>> {
 		if (!this._chapterIdSetPromise) {
 			this._chapterIdSetPromise = this.fetchAllChapterIds();
@@ -93,27 +77,23 @@ export class VolumeService {
 	/**
 	 * 新建一个空白章节，返回对应的 `ChapterService`。
 	 *
-	 * - 内部调用番茄"新建空白章节"接口（`new_article/v0/`）
+	 * - 由浏览器在作品管理页点击「新建章节」等触发 SPA
 	 * - 写后失效本卷的章节 ID 缓存
 	 */
 	async addChapter(): Promise<ChapterService> {
-		const data = await this.book.client.http.postForm<NewArticleResponse>(
-			URL_NEW_ARTICLE,
-			{ book_id: this.book.bookId, need_reuse: 1 },
-			"新建空白章节失败",
+		const data = await this.book.client.browser.createBlankChapter(
+			this.book.bookId,
 		);
 		this._chapterIdSetPromise = undefined;
 		return new ChapterService(this, data.itemId);
 	}
 
-	/** 重命名当前卷（委托父级 `book.modifyVolumes`）。 */
 	async rename(newName: string): Promise<void> {
 		await this.book.modifyVolumes([
 			{ volumeId: this.volumeId, volume_name: newName },
 		]);
 	}
 
-	/** 删除当前卷（委托父级 `book.deleteVolume`）。 */
 	async delete(): Promise<void> {
 		await this.book.deleteVolume(this.volumeId);
 	}
@@ -133,7 +113,6 @@ export class VolumeService {
 		return new ChapterService(this, itemId);
 	}
 
-	/** 失效本级缓存（章节 ID 集合）。 */
 	async refresh(): Promise<void> {
 		this._chapterIdSetPromise = undefined;
 	}

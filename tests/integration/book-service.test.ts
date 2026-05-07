@@ -1,12 +1,24 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FanqieClient } from "../../src/index.js";
-import { cookie, skipIfNoBookId, TEST_BOOK_ID } from "./fixtures.js";
+import {
+	chromiumPath,
+	skipIfNoBookId,
+	TEST_BOOK_ID,
+	userDataDir,
+} from "./fixtures.js";
 
 describe.skipIf(skipIfNoBookId)("BookService (integration)", () => {
 	let client: FanqieClient;
 
 	beforeAll(() => {
-		client = new FanqieClient({ cookie });
+		client = new FanqieClient({
+			userDataDir,
+			...(chromiumPath ? { executablePath: chromiumPath } : {}),
+		});
+	});
+
+	afterAll(async () => {
+		await client.close();
 	});
 
 	it("通过 client.book 工厂创建 BookService 并暴露 bookId/info", async () => {

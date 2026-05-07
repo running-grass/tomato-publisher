@@ -1,17 +1,25 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FanqieClient } from "../../src/index.js";
 import {
-	cookie,
+	chromiumPath,
 	skipIfNoVolumeId,
 	TEST_BOOK_ID,
 	TEST_VOLUME_ID,
+	userDataDir,
 } from "./fixtures.js";
 
 describe.skipIf(skipIfNoVolumeId)("VolumeService (integration)", () => {
 	let client: FanqieClient;
 
 	beforeAll(() => {
-		client = new FanqieClient({ cookie });
+		client = new FanqieClient({
+			userDataDir,
+			...(chromiumPath ? { executablePath: chromiumPath } : {}),
+		});
+	});
+
+	afterAll(async () => {
+		await client.close();
 	});
 
 	it("通过 book.volume 工厂创建 VolumeService 并暴露 volumeId/volumeName", async () => {

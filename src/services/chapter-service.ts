@@ -1,14 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import type { PublishChapterParams, PublishChapterResponse } from "../types";
 import {
 	formatChapterTitle,
 	normalizeChapterContent,
 } from "../utils/chapter-content";
 import type { VolumeService } from "./volume-service";
-
-const URL_PUBLISH_ARTICLE =
-	"https://fanqienovel.com/api/author/publish_article/v0";
 
 /** `publish` 方法的入参。 */
 export interface PublishArgs {
@@ -55,6 +51,9 @@ export class ChapterService {
 	async publish(
 		args: PublishArgs,
 	): Promise<{ itemId: string; formattedTitle: string }> {
+		if (args.scheduledAt != null) {
+			throw new Error("定时发布尚未在 UI 流程中实现");
+		}
 		const formattedTitle = formatChapterTitle(args.chapterNo, args.title);
 		const content = normalizeChapterContent(args.content);
 
@@ -78,13 +77,13 @@ export class ChapterService {
 	/**
 	 * 从文件读取正文并发布章节。
 	 *
-	 * @param filePath 正文文件路径（相对 `process.cwd()` 或绝对路径）
+	 * @param filePath 绝对路径，或相对 `FanqieClientOptions.fileReadBaseDir` 的路径
 	 */
 	async publishFromFile(
 		filePath: string,
 		args: PublishFromFileArgs,
 	): Promise<{ itemId: string; formattedTitle: string }> {
-		const fullPath = resolve(process.cwd(), filePath);
+		const fullPath = this.volume.book.client.resolveChapterFilePath(filePath);
 		if (!existsSync(fullPath)) {
 			throw new Error(`文件不存在: ${fullPath}`);
 		}
@@ -101,27 +100,6 @@ export class ChapterService {
 	private async publishChapterRaw(
 		params: PublishChapterParams,
 	): Promise<PublishChapterResponse> {
-		return this.volume.book.client.http.postForm<PublishChapterResponse>(
-			URL_PUBLISH_ARTICLE,
-			{
-				itemId: params.itemId ?? "",
-				book_id: params.book_id,
-				content: params.content,
-				timer_status: params.timer_status ?? 0,
-				need_pay: 0,
-				volume_name: params.volume_name,
-				volumeId: params.volumeId,
-				title: params.title,
-				timer_time: params.timer_time != null ? String(params.timer_time) : "",
-				publish_status: params.publish_status ?? 1,
-				device_platform: "pc",
-				speak_type: 0,
-				use_ai: 2,
-				timer_chapter_preview: "[]",
-				has_chapter_ad: false,
-				chapter_ad_types: "",
-			},
-			"发布/保存章节失败",
-		);
+		return this.volume.book.client.browser.publishChapter(params);
 	}
 }
