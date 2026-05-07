@@ -1,14 +1,17 @@
-name: CI
+name: Release
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -22,15 +25,20 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: "@running-grass"
+          always-auth: true
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Lint (Biome)
-        run: pnpm lint:ci
 
       - name: Type check
         run: pnpm typecheck
 
       - name: Build
         run: pnpm build
+
+      - name: Publish to GitHub Packages
+        run: pnpm publish --no-git-checks --access restricted
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
