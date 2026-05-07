@@ -1,19 +1,87 @@
+# main 推送后检测当前 HEAD 是否已有 v* 版本标签再发布（规避 github.token 打 tag 不触发其它 workflow 的问题）。
+# release-please 与本 workflow 并行启动时，tag 可能略晚于 checkout，故在「疑似发版提交」时短时轮询并 fetch tags。
+# workflow_dispatch：跳过检测，直接发布。push v* 标签：通常首检即有标签。
 name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.select.outputs.should_publish }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: 判断是否应发布
+        id: select
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          cd "$GITHUB_WORKSPACE"
+
+          has_v_tag() {
+            git tag --points-at HEAD 2>/dev/null | grep -qE '^v[0-9]'
+          }
+
+          if has_v_tag; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 非 main 上的 push（仅 tags）已在上面命中 tag；此处为 push main 且尚无 tag
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 无 CHANGELOG 变更则不像 release-please 发版合并，避免每次 main push 长时间等待
+          if ! git show --name-only --format="" HEAD | grep -qx CHANGELOG.md; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 最多约 3 分钟：等待 release-please 为同一 commit 打上 v*
+          for _ in $(seq 1 36); do
+            git fetch --tags --force origin 2>/dev/null || true
+            if has_v_tag; then
+              echo "should_publish=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "should_publish=false" >> "$GITHUB_OUTPUT"
+
   publish:
+    needs: check
+    if: needs.check.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
